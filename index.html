@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Rexmeck Custom Shirt Generator</title>
+        <style>
+            .default-font {
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 0.5cm;
+                font-weight:lighter;
+            }
+            
+            .default-button {
+                color: #111; 
+                border: 2px solid #888; 
+                border-radius: 4px; 
+                background-color: #eee;
+            }
+
+            body {
+              height: 100vh;
+              margin: 0;
+              background-color: #000; 
+              padding: 0;
+              position: relative;
+            }
+
+            .header {
+                overflow: hidden;
+                background-color: #202020;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 100%;
+                max-height: 8cm;
+                z-index: 99;
+            }
+
+            #generating {
+                display: none;
+            }
+            .middle-align {
+                overflow: hidden;
+                max-width: 960px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            
+            .shadow {
+                box-shadow: 0px 20px 20px 0px #00000040;
+            }
+
+            .imgbg {
+              background-color: #444;
+              overflow: hidden;
+              background-size: 50px 50px;
+              background-position: 0 0, 25px 25px;
+              background-image: linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%, #888),
+                                linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%, #888);
+            }
+
+        </style>
+    </head>
+    
+    <body>
+        <div class="header shadow">
+            <h1 align="center" class="default-font" style="font-size: 1cm; color:#808080; margin-top: 15px;">Rexmeck Custom Shirt Generator</h1>
+        </div>
+        <!--Main page-->
+        <div class="middle-align shadow" style="margin-top: 30px; padding-top: 30px; padding-bottom: 30px; background-color: #fafafa; min-width: 120px;">
+            <div style="padding-left: 3.5%; padding-right: 5%;">
+                <label class="default-font">Input: </label>
+                <br>
+                <button name="generate" onclick="generate()" class="default-button">Generate</button>
+                <input type="file" id="input" accept="image/*" class="default-button">
+                <label id="generating" class="default-font" >Generating...</label>
+                <br>
+                <br>
+                <label class="default-font">Output: </label>
+                <br>
+                <br>
+                <textarea id="output" wrap="soft" spellcheck="false" style="max-width:100%; min-width: 100%; height: 250px; resize: vertical;"> </textarea>
+            </div>
+        </div>
+        
+        <div class="middle-align shadow" style="margin-top: 30px; padding-top: 30px; padding-bottom: 30px; background-color: #fafafa; min-width: 120px;">
+            <div style="padding-left: 3.5%; padding-right: 5%;">
+                <h1 align="center" class="default-font">template.png</h1>
+                <br>
+                <br>
+                <div class="imgbg"style="outline:solid #888 1px;">
+                    <img src="template.png" >
+                </div>
+            </div>
+        </div>
+    </body>
+    
+    <script>
+        var ready = true
+
+        //Util credits from people on stackoverflow
+        function componentToHex(c) {
+            var hex = c.toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        }
+        
+        function hexEnd0(v) {
+            for(var i=0;i<16;i++){
+                if(v == i * 17) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function rgbaToHex(r, g, b, a) {
+            //very bad coding here
+            r = Math.min(r,255);
+            g = Math.min(g,255);
+            b = Math.min(b,255);
+            a = Math.min(a,255);
+
+            if(hexEnd0(r) && hexEnd0(g) && hexEnd0(b)) {
+                if (a == 255) {
+                    return componentToHex(r).substring(0, 1) + componentToHex(g).substring(0, 1) + componentToHex(b).substring(0, 1);
+                }
+                else{
+                    if(hexEnd0(a)){
+                        return componentToHex(r).substring(0, 1) + componentToHex(g).substring(0, 1) + componentToHex(b).substring(0, 1) + componentToHex(a).substring(0, 1);
+                    }
+                }
+            }
+            if(a == 255){
+                return componentToHex(r) + componentToHex(g) + componentToHex(b)
+            }
+            return componentToHex(r) + componentToHex(g) + componentToHex(b) + componentToHex(a);
+        }
+
+        function rgbaToHexNoTransparentCheck(r, g, b, a) {
+            r = Math.min(r,255);
+            g = Math.min(g,255);
+            b = Math.min(b,255);
+            a = Math.min(a,255);
+            if(hexEnd0(r) && hexEnd0(g) && hexEnd0(b)) {
+                if (a == 255) {
+                    return componentToHex(r).substring(0, 1) + componentToHex(g).substring(0, 1) + componentToHex(b).substring(0, 1);
+                }
+                else{
+                    if(hexEnd0(a)){
+                        return componentToHex(r).substring(0, 1) + componentToHex(g).substring(0, 1) + componentToHex(b).substring(0, 1) + componentToHex(a).substring(0, 1);
+                    }
+                }
+            }
+
+            if(a == 255){
+                return componentToHex(r) + componentToHex(g) + componentToHex(b)
+            }
+            return componentToHex(r) + componentToHex(g) + componentToHex(b) + componentToHex(a);
+        }
+        //
+
+        //button callback
+        function generate(){
+            let outputText = document.getElementById("output");
+            let generatingtext = document.getElementById("generating");
+            outputText.value = "";
+
+            generatingtext.style.display = "initial";
+            
+            if (ready && document.getElementById("input").files.length == 1) {
+                ready = false
+                let reader = new FileReader();
+                let f = document.getElementById("input").files[0];
+                reader.onload = function(a) 
+                {
+                    let img = new Image;
+                    img.onload = function() { 
+                        if (img.width == 258 && img.height == 1161)
+                        {
+                            document.getElementById("output").value = drawCustom(img); 
+                        }
+                        generatingtext.style.display = "none";
+                        ready = true;
+                    };
+                    img.src = a.target.result;
+                };
+                reader.readAsDataURL(f);
+            }
+            else
+            {
+                generatingtext.style.display = "none";
+            }
+        }
+
+        function drawIndex(context2d, frameSize, greenIndex, indexPosition, repl){
+            let offset = [frameSize[0] * indexPosition[0], frameSize[1] * indexPosition[1]];
+            let replaces = repl != null ? repl : {};
+            let palettes = "";
+
+            for(let x = 0; x <= frameSize[0] - 1; x++)
+            {
+                for(let y = 0; y <= frameSize[1] - 1 ; y++)
+                {
+                    let pix = context2d.getImageData(offset[0] + x, offset[1] + (frameSize[1] - y) - 1, 1, 1).data;
+
+                    if (pix[3] > 0){ 
+                        let color = rgbaToHex(pix[0], pix[1], pix[2], pix[3]);
+                        palettes += ";" + rgbaToHexNoTransparentCheck(x, greenIndex, y,0) + "=" + (replaces[color] != null ? replaces[color] : color);
+                    }
+                    else{
+                    }
+                }
+            }
+
+            return palettes;
+        }
+
+        var FrameGreenIndex = { //index starts from top left
+            //chest male
+            "80" : [0,1],
+            "81" : [1,1],
+            "82" : [2,1],
+            "83" : [3,1],
+            "84" : [4,1],
+            "85" : [5,1],
+            //chest female
+            "86" : [0,2],
+            "87" : [1,2],
+            "88" : [2,2],
+            "89" : [3,2],
+            "8a" : [4,2],
+            "8b" : [5,2],
+            //back sleeves
+
+            "8c" : [0,4], //idle
+            "8d" : [1,4],
+            "8e" : [2,4],
+            "8f" : [3,4],
+            "90" : [4,4],
+
+            "91" : [0,5], //duck
+
+            "92" : [0,6], //walk
+            "93" : [1,6],
+            "94" : [2,6],
+            "95" : [3,6],
+            "96" : [4,6],
+
+            "97" : [0,7], //rotation
+
+            "98" : [0,8], // run
+            "99" : [1,8],
+            "9a" : [2,8],
+            "9b" : [3,8],
+            "9c" : [4,8],
+
+            "9d" : [0,9], // jump
+            "9e" : [1,9],
+            "9f" : [2,9],
+            "a0" : [3,9],
+
+            "a1" : [0,10], // fall
+            "a2" : [1,10],
+            "a3" : [2,10],
+            "a4" : [3,10],
+
+            "a5" : [0,11], // swimIdle
+            "a6" : [1,11],
+
+            "a7" : [0,12], // swim
+            "a8" : [1,12],
+            "a9" : [2,12],
+            "aa" : [3,12],
+            "ab" : [4,12],
+
+            "ac" : [0,13], // idleMelee
+
+            "ad" : [0,14], // duckMelee
+
+            //front sleeves
+            "ae" : [0,16], //idle
+            "af" : [1,16],
+            "b0" : [2,16],
+            "b1" : [3,16],
+            "b2" : [4,16],
+
+            "b3" : [0,17], //duck
+
+            "b4" : [0,18], //walk
+            "b5" : [1,18],
+            "b6" : [2,18],
+            "b7" : [3,18],
+            "b8" : [4,18],
+
+            "b9" : [0,19], //rotation
+
+            "ba" : [0,20], // run
+            "bb" : [1,20],
+            "bc" : [2,20],
+            "bd" : [3,20],
+            "be" : [4,20],
+
+            "bf" : [0,21], // jump
+            "c0" : [1,21],
+            "c1" : [2,21],
+            "c2" : [3,21],
+
+            "c3" : [0,22], // fall
+            "c4" : [1,22],
+            "c5" : [2,22],
+            "c6" : [3,22],
+
+            "c7" : [0,23], // swimIdle
+            "c8" : [1,23],
+
+            "c9" : [0,24], // swim
+            "ca" : [1,24],
+            "cb" : [2,24],
+            "cc" : [3,24],
+            "cd" : [4,24],
+
+            "ce" : [0,25], // idleMelee
+
+            "cf" : [0,26] // duckMelee
+        }
+
+        function drawCustom(image) {
+            let img = document.createElement('canvas');
+            img.width = image.width;
+            img.height = image.height;
+            let context2d = img.getContext('2d');
+            context2d.drawImage(image, 0,0);
+
+            let palettesCounts = getPalettesCount(image);
+            let palettesReplaces = makeReplaces(palettesCounts);
+
+            let directives = "?replace;0000=f004;fff0=0006;d1e16000=ff03;60111900=0f08;d93a3a00=0ff6;1b4c2a00=00f;9bba3d00=f0f2?scale=0.4?scale=0.7?scale=0.9?scale=0.7?scale=0.9?scale=0.7?scale=0.9?crop;2;2;3;3?replace;b84d0b67=008000;d4551069=008100;cc90105d=008200;cd99115f=008300;d9a10d42=008400;af7c0d61=008500;c62f0a55=008600;bf77205d=008700;d4960f50=080;d29c0d51=008900;dca30d3e=008a00;b07f0d5e=008b00;eb201b50=008c00;f2a63042=008d00;efa13145=008e00;f3a82f3f=008f00;eea23244=009000;ed982b40=009100;f1ec0841=009200;f3ef063e=009300;f4f0063d=009400;ede70545=009500;f0ea0743=009600;f0e00841=009700;f6f3033a=009800;f3f0053d=090;ede90644=009a00;f4f0043e=009b00;f2ed033f=009c00;f035134c=009d00;e8e0094c=009e00;f2ed0440=009f00;efea0642=00a000;ece60545=00a100;eae50546=00a200;ede90342=00a300;e8d70343=00a400;f3391247=00a500;f1ee033f=00a600;f2ee033f=00a700;f2ec0242=00a800;f8f4033a=00a900;f2ef043e=0a0;f2e3043b=00ab00;edcd1d43=00ac00;edc41a3e=00ad00;b9893a58=00ae00;c1903559=00af00;c999334f=00b000;cb9b314f=00b100;cc9e314c=00b200;bb397f50=00b300;e9e3074a=00b400;eee80745=00b500;e5dc0d4f=00b600;e8df0c4d=00b700;eae30b49=00b800;db706347=00b900;e7df094d=00ba00;ece2094c=0b0;eae10e4d=00bc00;eae30a4b=00bd00;e4d81056=00be00;cdc3145c=00bf00;ebe20d4b=00c000;e9df0d50=00c100;e3d80b53=00c200;eae20a4b=00c300;f2ea0944=00c400;f1ed0540=00c500;de71613d=00c600;cbc01960=00c700;e6db0e51=00c800;e8de0a4f=00c900;e4d80b54=00ca00;f1eb0741=00cb00;e9e00d4e=0c0;da6c6847=00cd00;e6d1184d=00ce00;d0507b4f=00cf00?scalenearest=2?blendscreen=/objects/outpost/customsign/signplaceholder.png?replace;010100=2b0100;010101=2b012b;000101=00012b;010200=2b0200;010201=2b022b;000201=00022b;010300=2b0300;010301=2b032b;000301=00032b;010400=2b0400;010401=2b042b;000401=00042b;010500=2b0500;010501=2b052b;000501=00052b;010600=2b0600;010601=2b062b;000601=00062b;010700=2b0700;010701=2b072b;000701=00072b;010800=2b0800;010801=2b082b;000801=00082b;010900=2b0900;010901=2b092b;000901=00092b;010a00=2b0a00;010a01=2b0a2b;000a01=000a2b;010b00=2b0b00;010b01=2b0b2b;000b01=000b2b;010c00=2b0c00;010c01=2b0c2b;000c01=000c2b;010d00=2b0d00;010d01=2b0d2b;000d01=000d2b;010e00=2b0e00;010e01=2b0e2b;000e01=000e2b;010f00=2b0f00;010f01=2b0f2b;000f01=000f2b;011000=2b1000;011001=2b102b;001001=00102b;011100=2b1100;011101=2b112b;001101=00112b;011200=2b1200;011201=2b122b;001201=00122b;011300=2b1300;011301=2b132b;001301=00132b;011400=2b1400;011401=2b142b;001401=00142b;011500=2b1500;011501=2b152b;001501=00152b;011600=2b1600;011601=2b162b;001601=00162b;011700=2b1700;011701=2b172b;001701=00172b;011800=2b1800;011801=2b182b;001801=00182b;011900=2b1900;011901=2b192b;001901=00192b;011a00=2b1a00;011a01=2b1a2b;001a01=001a2b;011b00=2b1b00;011b01=2b1b2b;001b01=001b2b;011c00=2b1c00;011c01=2b1c2b;001c01=001c2b;011d00=2b1d00;011d01=2b1d2b;001d01=001d2b;011e00=2b1e00;011e01=2b1e2b;001e01=001e2b;011f00=2b1f00;011f01=2b1f2b;001f01=001f2b;012000=2b2000;012001=2b202b;002001=00202b;012100=2b2100;012101=2b212b;002101=00212b;012200=2b2200;012201=2b222b;002201=00222b;012300=2b2300;012301=2b232b;002301=00232b;012400=2b2400;012401=2b242b;002401=00242b;012500=2b2500;012501=2b252b;002501=00252b;012600=2b2600;012601=2b262b;002601=00262b;012700=2b2700;012701=2b272b;002701=00272b;012800=2b2800;012801=2b282b;002801=00282b;012900=2b2900;012901=2b292b;002901=00292b;012a00=2b2a00;012a01=2b2a2b;002a01=002a2b;012b00=2b2b00;012b01=2b2b2b;002b01=002b2b;012c00=2b2c00;012c01=2b2c2b;002c01=002c2b;012d00=2b2d00;012d01=2b2d2b;002d01=002d2b;012e00=2b2e00;012e01=2b2e2b;002e01=002e2b;012f00=2b2f00;012f01=2b2f2b;002f01=002f2b;013000=2b3000;013001=2b302b;003001=00302b;013100=2b3100;013101=2b312b;003101=00312b;013200=2b3200;013201=2b322b;003201=00322b;013300=2b3300;013301=2b332b;003301=00332b;013400=2b3400;013401=2b342b;003401=00342b;013500=2b3500;013501=2b352b;003501=00352b;013600=2b3600;013601=2b362b;003601=00362b;013700=2b3700;013701=2b372b;003701=00372b;013800=2b3800;013801=2b382b;003801=00382b;013900=2b3900;013901=2b392b;003901=00392b;013a00=2b3a00;013a01=2b3a2b;003a01=003a2b;013b00=2b3b00;013b01=2b3b2b;003b01=003b2b;013c00=2b3c00;013c01=2b3c2b;003c01=003c2b;013d00=2b3d00;013d01=2b3d2b;003d01=003d2b;013e00=2b3e00;013e01=2b3e2b;003e01=003e2b;013f00=2b3f00;013f01=2b3f2b;003f01=003f2b;014000=2b4000;014001=2b402b;004001=00402b;014100=2b4100;014101=2b412b;004101=00412b;014200=2b4200;014201=2b422b;004201=00422b;014300=2b4300;014301=2b432b;004301=00432b;014400=2b4400;014401=2b442b;004401=00442b;014500=2b4500;014501=2b452b;004501=00452b;014600=2b4600;014601=2b462b;004601=00462b;014700=2b4700;014701=2b472b;004701=00472b;014800=2b4800;014801=2b482b;004801=00482b;014900=2b4900;014901=2b492b;004901=00492b;014a00=2b4a00;014a01=2b4a2b;004a01=004a2b;014b00=2b4b00;014b01=2b4b2b;004b01=004b2b;014c00=2b4c00;014c01=2b4c2b;004c01=004c2b;014d00=2b4d00;014d01=2b4d2b;004d01=004d2b;014e00=2b4e00;014e01=2b4e2b;004e01=004e2b;014f00=2b4f00;014f01=2b4f2b;004f01=004f2b;015000=2b5000;015001=2b502b;005001=00502b;015100=2b5100;015101=2b512b;005101=00512b;015200=2b5200;015201=2b522b;005201=00522b;015300=2b5300;015301=2b532b;005301=00532b;015400=2b5400;015401=2b542b;005401=00542b;015500=2b5500;015501=2b552b;005501=00552b;015600=2b5600;015601=2b562b;005601=00562b;015700=2b5700;015701=2b572b;005701=00572b;015800=2b5800;015801=2b582b;005801=00582b;015900=2b5900;015901=2b592b;005901=00592b;015a00=2b5a00;015a01=2b5a2b;005a01=005a2b;015b00=2b5b00;015b01=2b5b2b;005b01=005b2b;015c00=2b5c00;015c01=2b5c2b;005c01=005c2b;015d00=2b5d00;015d01=2b5d2b;005d01=005d2b;015e00=2b5e00;015e01=2b5e2b;005e01=005e2b;015f00=2b5f00;015f01=2b5f2b;005f01=005f2b;016000=2b6000;016001=2b602b;006001=00602b;016100=2b6100;016101=2b612b;006101=00612b;016200=2b6200;016201=2b622b;006201=00622b;016300=2b6300;016301=2b632b;006301=00632b;016400=2b6400;016401=2b642b;006401=00642b;016500=2b6500;016501=2b652b;006501=00652b;016600=2b6600;016601=2b662b;006601=00662b;016700=2b6700;016701=2b672b;006701=00672b;016800=2b6800;016801=2b682b;006801=00682b;016900=2b6900;016901=2b692b;006901=00692b;016a00=2b6a00;016a01=2b6a2b;006a01=006a2b;016b00=2b6b00;016b01=2b6b2b;006b01=006b2b;016c00=2b6c00;016c01=2b6c2b;006c01=006c2b;016d00=2b6d00;016d01=2b6d2b;006d01=006d2b;016e00=2b6e00;016e01=2b6e2b;006e01=006e2b;016f00=2b6f00;016f01=2b6f2b;006f01=006f2b;017000=2b7000;017001=2b702b;007001=00702b;017100=2b7100;017101=2b712b;007101=00712b;017200=2b7200;017201=2b722b;007201=00722b;017300=2b7300;017301=2b732b;007301=00732b;017400=2b7400;017401=2b742b;007401=00742b;017500=2b7500;017501=2b752b;007501=00752b;017600=2b7600;017601=2b762b;007601=00762b;017700=2b7700;017701=2b772b;007701=00772b;017800=2b7800;017801=2b782b;007801=00782b;017900=2b7900;017901=2b792b;007901=00792b;017a00=2b7a00;017a01=2b7a2b;007a01=007a2b;017b00=2b7b00;017b01=2b7b2b;007b01=007b2b;017c00=2b7c00;017c01=2b7c2b;007c01=007c2b;017d00=2b7d00;017d01=2b7d2b;007d01=007d2b;017e00=2b7e00;017e01=2b7e2b;007e01=007e2b;017f00=2b7f00;017f01=2b7f2b;007f01=007f2b;018000=2b8000;018001=2b802b;008001=00802b;018100=2b8100;018101=2b812b;008101=00812b;018200=2b8200;018201=2b822b;008201=00822b;018300=2b8300;018301=2b832b;008301=00832b;018400=2b8400;018401=2b842b;008401=00842b;018500=2b8500;018501=2b852b;008501=00852b;018600=2b8600;018601=2b862b;008601=00862b;018700=2b8700;018701=2b872b;008701=00872b;018800=2b8800;018801=2b882b;008801=00882b;018900=2b8900;018901=2b892b;008901=00892b;018a00=2b8a00;018a01=2b8a2b;008a01=008a2b;018b00=2b8b00;018b01=2b8b2b;008b01=008b2b;018c00=2b8c00;018c01=2b8c2b;008c01=008c2b;018d00=2b8d00;018d01=2b8d2b;008d01=008d2b;018e00=2b8e00;018e01=2b8e2b;008e01=008e2b;018f00=2b8f00;018f01=2b8f2b;008f01=008f2b;019000=2b9000;019001=2b902b;009001=00902b;019100=2b9100;019101=2b912b;009101=00912b;019200=2b9200;019201=2b922b;009201=00922b;019300=2b9300;019301=2b932b;009301=00932b;019400=2b9400;019401=2b942b;009401=00942b;019500=2b9500;019501=2b952b;009501=00952b;019600=2b9600;019601=2b962b;009601=00962b;019700=2b9700;019701=2b972b;009701=00972b;019800=2b9800;019801=2b982b;009801=00982b;019900=2b9900;019901=2b992b;009901=00992b;019a00=2b9a00;019a01=2b9a2b;009a01=009a2b;019b00=2b9b00;019b01=2b9b2b;009b01=009b2b;019c00=2b9c00;019c01=2b9c2b;009c01=009c2b;019d00=2b9d00;019d01=2b9d2b;009d01=009d2b;019e00=2b9e00;019e01=2b9e2b;009e01=009e2b;019f00=2b9f00;019f01=2b9f2b;009f01=009f2b;01a000=2ba000;01a001=2ba02b;00a001=00a02b;01a100=2ba100;01a101=2ba12b;00a101=00a12b;01a200=2ba200;01a201=2ba22b;00a201=00a22b;01a300=2ba300;01a301=2ba32b;00a301=00a32b;01a400=2ba400;01a401=2ba42b;00a401=00a42b;01a500=2ba500;01a501=2ba52b;00a501=00a52b;01a600=2ba600;01a601=2ba62b;00a601=00a62b;01a700=2ba700;01a701=2ba72b;00a701=00a72b;01a800=2ba800;01a801=2ba82b;00a801=00a82b;01a900=2ba900;01a901=2ba92b;00a901=00a92b;01aa00=2baa00;01aa01=2baa2b;00aa01=00aa2b;01ab00=2bab00;01ab01=2bab2b;00ab01=00ab2b;01ac00=2bac00;01ac01=2bac2b;00ac01=00ac2b;01ad00=2bad00;01ad01=2bad2b;00ad01=00ad2b;01ae00=2bae00;01ae01=2bae2b;00ae01=00ae2b;01af00=2baf00;01af01=2baf2b;00af01=00af2b;01b000=2bb000;01b001=2bb02b;00b001=00b02b;01b100=2bb100;01b101=2bb12b;00b101=00b12b;01b200=2bb200;01b201=2bb22b;00b201=00b22b;01b300=2bb300;01b301=2bb32b;00b301=00b32b;01b400=2bb400;01b401=2bb42b;00b401=00b42b;01b500=2bb500;01b501=2bb52b;00b501=00b52b;01b600=2bb600;01b601=2bb62b;00b601=00b62b;01b700=2bb700;01b701=2bb72b;00b701=00b72b;01b800=2bb800;01b801=2bb82b;00b801=00b82b;01b900=2bb900;01b901=2bb92b;00b901=00b92b;01ba00=2bba00;01ba01=2bba2b;00ba01=00ba2b;01bb00=2bbb00;01bb01=2bbb2b;00bb01=00bb2b;01bc00=2bbc00;01bc01=2bbc2b;00bc01=00bc2b;01bd00=2bbd00;01bd01=2bbd2b;00bd01=00bd2b;01be00=2bbe00;01be01=2bbe2b;00be01=00be2b;01bf00=2bbf00;01bf01=2bbf2b;00bf01=00bf2b;01c000=2bc000;01c001=2bc02b;00c001=00c02b;01c100=2bc100;01c101=2bc12b;00c101=00c12b;01c200=2bc200;01c201=2bc22b;00c201=00c22b;01c300=2bc300;01c301=2bc32b;00c301=00c32b;01c400=2bc400;01c401=2bc42b;00c401=00c42b;01c500=2bc500;01c501=2bc52b;00c501=00c52b;01c600=2bc600;01c601=2bc62b;00c601=00c62b;01c700=2bc700;01c701=2bc72b;00c701=00c72b;01c800=2bc800;01c801=2bc82b;00c801=00c82b;01c900=2bc900;01c901=2bc92b;00c901=00c92b;01ca00=2bca00;01ca01=2bca2b;00ca01=00ca2b;01cb00=2bcb00;01cb01=2bcb2b;00cb01=00cb2b;01cc00=2bcc00;01cc01=2bcc2b;00cc01=00cc2b;01cd00=2bcd00;01cd01=2bcd2b;00cd01=00cd2b;01ce00=2bce00;01ce01=2bce2b;00ce01=00ce2b;01cf00=2bcf00;01cf01=2bcf2b;00cf01=00cf2b;01d000=2bd000;01d001=2bd02b;00d001=00d02b?multiply=fff0?scale=42.5?crop;0;0;43;43";
+            
+            let palettes = "";
+            for(var key in FrameGreenIndex)
+            {
+                palettes += drawIndex(context2d, [43,43], parseInt(key,16), FrameGreenIndex[key], palettesReplaces);
+            }
+
+            return directives + "?replace" + palettes + createReplaces(palettesReplaces);
+        }
+
+        function getPalettesCount(image)
+        {
+            let img = document.createElement('canvas');
+            img.width = image.width;
+            img.height = image.height;
+            let context2d = img.getContext('2d');
+            context2d.drawImage(image, 0,0);
+            let palettes = {}
+            for (x = 0; x < img.width; x++)
+            {
+                for (y = 0; y < img.height; y++)
+                {
+                    let c = context2d.getImageData(x, y, 1, 1).data;
+                    let hex = rgbaToHex(c[0], c[1], c[2], c[3]);
+                    palettes[hex] = (palettes[hex] != null ? palettes[hex] : 0) + 1;
+                }
+            }
+            return palettes;
+        }
+
+        function makeReplaces(palettes)
+        {
+            let repl = {};
+            let ind = [0, 0, 0];
+            for(var key in palettes)
+            {
+                if(key.length > 4 && palettes[key] > 9)
+                {
+                    repl[key] = rgbaToHexNoTransparentCheck(ind[0]*17,ind[1]*17,ind[2]*17,0);
+                    ind[0] += 1;
+                    if(ind[0] > 15)
+                    {
+                        ind[0] = 0;
+                        ind[2] += 1;
+                    }
+                    if(ind[2] > 15)
+                    {
+                        ind[2] = 0;
+                        ind[1] += 1;
+                    }
+                    if(ind[1] > 7) //too many palettes shouldnt really reach it unless the user tries
+                    {
+                        break;
+                    }
+                }
+            }
+            return repl;
+        }
+
+        function createReplaces(repl)
+        {
+            let directives = "?replace"
+            for(var key in repl)
+            {
+                directives += ";" + repl[key] + "=" + key;
+            }
+            if(directives == "?replace"){
+                return "";
+            }
+            return directives;
+        }
+
+        function lerp(a,b,r)
+        {
+            return a+(b-a)*r;
+        }
+
+        var speed = 1/16;
+
+        var lastColor = [0, 212, 219];
+        var targetColor = [70, 112, 16];
+            
+        var current_lastColor = [0, 0, 0];
+        var current_targetColor = [0, 0, 0];
+
+        function tick()
+        {
+            current_lastColor = [lerp(current_lastColor[0], lastColor[0], speed), lerp(current_lastColor[1], lastColor[1], speed), lerp(current_lastColor[2], lastColor[2], speed)];
+            current_targetColor = [lerp(current_targetColor[0], targetColor[0], speed), lerp(current_targetColor[1], targetColor[1], speed), lerp(current_targetColor[2], targetColor[2], speed)];
+            document.body.style.backgroundImage = "linear-gradient(90deg, rgb("+current_targetColor[0]+","+current_targetColor[1]+","+current_targetColor[2]+"),rgb("+current_lastColor[0]+","+current_lastColor[1]+","+current_lastColor[2]+"))";
+        }
+
+        function tick2()
+        {
+            lastColor = targetColor;
+            targetColor = [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+        }
+
+        tick();
+        tick2();
+
+        setInterval(tick2,5000);
+        setInterval(tick,64);
+
+    </script>
+</html> 
