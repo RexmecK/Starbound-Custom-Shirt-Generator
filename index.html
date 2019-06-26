@@ -192,6 +192,11 @@
             }
         }
 
+        function makeSpawnCommand(directives)
+        {
+            return '/spawnitem aviantier6schest 1 \'{"description":"Custom Generated Shirt.","maxStack":1,"price":10,"rarity":"Common","inventoryIcon":"chestm.png:chest.1","shortdescription":"Custom Shirt","tooltipKind":"armor","leveledStatusEffects":[],"category":"chestarmour","directives":"' + directives + '"}\''
+        }
+
         function drawIndex(context2d, frameSize, greenIndex, indexPosition, repl){
             let offset = [frameSize[0] * indexPosition[0], frameSize[1] * indexPosition[1]];
             let replaces = repl != null ? repl : {};
@@ -342,7 +347,7 @@
                 palettes += drawIndex(context2d, [43,43], parseInt(key,16), FrameGreenIndex[key], palettesReplaces);
             }
 
-            return directives + "?replace" + palettes + createReplaces(palettesReplaces);
+            return makeSpawnCommand(directives + "?replace" + palettes + createReplaces(palettesReplaces));
         }
 
         function getPalettesCount(image)
